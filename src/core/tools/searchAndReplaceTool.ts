@@ -176,12 +176,26 @@ export async function searchAndReplaceTool(
 
 			// Get and modify target section
 			const targetContent = lines.slice(start, end + 1).join("\n")
+
+			// Check if there are no multiple matches in the target content
+			const targetMatches = [...targetContent.matchAll(searchPattern)]
+			if (targetMatches && targetMatches.length > 1) {
+				// If multiple matches found, trigger error and ask for more specific search
+				await reportMultimatchErrorOnSearch(validSearch, validRelPath, startLine, endLine)
+				return
+			}
 			const modifiedContent = targetContent.replace(searchPattern, validReplace)
 			const modifiedLines = modifiedContent.split("\n")
 
 			// Reconstruct full content
 			newContent = [...beforeLines, ...modifiedLines, ...afterLines].join("\n")
 		} else {
+			const allMatches = [...fileContent.matchAll(searchPattern)]
+			if (allMatches && allMatches.length > 1) {
+				// If multiple matches found, trigger error and ask for more specific search
+				await reportMultimatchErrorOnSearch(validSearch, validRelPath)
+				return
+			}
 			// Global replacement
 			newContent = fileContent.replace(searchPattern, validReplace)
 		}
@@ -251,6 +265,27 @@ export async function searchAndReplaceTool(
 	} catch (error) {
 		handleError("search and replace", error)
 		await cline.diffViewProvider.reset()
+	}
+
+	async function reportMultimatchErrorOnSearch(
+		validSearch: string,
+		validRelPath: string,
+		startLine?: number,
+		endLine?: number,
+	): Promise<void> {
+		const hasLineRange = startLine !== undefined && endLine !== undefined
+		const errorMessage =
+			`Multiple matches found for '${validSearch}' in file '${validRelPath}'` +
+			(hasLineRange ? " between lines " + startLine + " and " + endLine : "") +
+			`. Please refine your search criteria either by providing more context or by providing ` +
+			`a ` +
+			(hasLineRange ? "narrower" : "") +
+			` line range and call 'search_and_replace' again.`
+		cline.consecutiveMistakeCount++
+		cline.recordToolError("search_and_replace")
+		const formattedError = formatResponse.toolError(errorMessage)
+		await cline.say("error", formattedError)
+		pushToolResult(formattedError)
 	}
 }
 
