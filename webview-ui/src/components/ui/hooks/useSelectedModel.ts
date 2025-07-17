@@ -189,8 +189,8 @@ function getSelectedModel({
 		}
 		case "lmstudio": {
 			const id = apiConfiguration.lmStudioModelId ?? ""
-			const info = openAiModelInfoSaneDefaults
-			return { id, info }
+			const info = routerModels.lmstudio[id]
+			return { id, info: info || openAiModelInfoSaneDefaults } // Fallback to sane defaults if model not found
 		}
 		case "vscode-lm": {
 			const id = apiConfiguration?.vsCodeLmModelSelector

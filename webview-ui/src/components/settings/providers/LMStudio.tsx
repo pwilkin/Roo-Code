@@ -36,9 +36,9 @@ export const LMStudio = ({ apiConfiguration, setApiConfigurationField }: LMStudi
 		const message: ExtensionMessage = event.data
 
 		switch (message.type) {
-			case "lmStudioModels":
+			case "routerModels":
 				{
-					const newModels = message.lmStudioModels ?? []
+					const newModels = Object.keys(message.routerModels?.lmstudio || {})
 					setLmStudioModels(newModels)
 				}
 				break

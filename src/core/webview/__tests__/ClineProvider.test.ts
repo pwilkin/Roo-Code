@@ -2250,6 +2250,7 @@ describe("ClineProvider - Router Models", () => {
 				unboundApiKey: "unbound-key",
 				litellmApiKey: "litellm-key",
 				litellmBaseUrl: "http://localhost:4000",
+				lmStudioBaseUrl: "http://localhost:1234",
 			},
 		} as any)
 
@@ -2273,6 +2274,7 @@ describe("ClineProvider - Router Models", () => {
 			apiKey: "litellm-key",
 			baseUrl: "http://localhost:4000",
 		})
+		expect(getModels).toHaveBeenCalledWith({ provider: "lmstudio", baseUrl: "http://localhost:1234" })
 
 		// Verify response was sent
 		expect(mockPostMessage).toHaveBeenCalledWith({
@@ -2283,6 +2285,7 @@ describe("ClineProvider - Router Models", () => {
 				glama: mockModels,
 				unbound: mockModels,
 				litellm: mockModels,
+				lmstudio: mockModels,
 			},
 		})
 	})
@@ -2299,6 +2302,7 @@ describe("ClineProvider - Router Models", () => {
 				unboundApiKey: "unbound-key",
 				litellmApiKey: "litellm-key",
 				litellmBaseUrl: "http://localhost:4000",
+				lmStudioBaseUrl: "http://localhost:1234",
 			},
 		} as any)
 
@@ -2312,6 +2316,7 @@ describe("ClineProvider - Router Models", () => {
 			.mockResolvedValueOnce(mockModels) // glama success
 			.mockRejectedValueOnce(new Error("Unbound API error")) // unbound fail
 			.mockRejectedValueOnce(new Error("LiteLLM connection failed")) // litellm fail
+			.mockRejectedValueOnce(new Error("LMStudio API error")) // lmstudio fail
 
 		await messageHandler({ type: "requestRouterModels" })
 
@@ -2324,6 +2329,7 @@ describe("ClineProvider - Router Models", () => {
 				glama: mockModels,
 				unbound: {},
 				litellm: {},
+				lmstudio: {},
 			},
 		})
 
@@ -2347,6 +2353,13 @@ describe("ClineProvider - Router Models", () => {
 			success: false,
 			error: "LiteLLM connection failed",
 			values: { provider: "litellm" },
+		})
+
+		expect(mockPostMessage).toHaveBeenCalledWith({
+			type: "singleRouterModelFetchResponse",
+			success: false,
+			error: "LMStudio API error",
+			values: { provider: "lmstudio" },
 		})
 	})
 
@@ -2421,6 +2434,7 @@ describe("ClineProvider - Router Models", () => {
 				glama: mockModels,
 				unbound: mockModels,
 				litellm: {},
+				lmstudio: mockModels,
 			},
 		})
 	})

@@ -55,7 +55,6 @@ export interface WebviewMessage {
 		| "requestRouterModels"
 		| "requestOpenAiModels"
 		| "requestOllamaModels"
-		| "requestLmStudioModels"
 		| "requestVsCodeLmModels"
 		| "openImage"
 		| "saveImage"

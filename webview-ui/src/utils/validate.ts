@@ -219,6 +219,9 @@ export function validateModelId(apiConfiguration: ProviderSettings, routerModels
 		case "litellm":
 			modelId = apiConfiguration.litellmModelId
 			break
+		case "lmstudio":
+			modelId = apiConfiguration.lmStudioModelId
+			break
 	}
 
 	if (!modelId) {

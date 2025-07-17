@@ -2,6 +2,7 @@ import { webviewMessageHandler } from "../webviewMessageHandler"
 import { ClineProvider } from "../ClineProvider"
 import { getModels } from "../../../api/providers/fetchers/modelCache"
 import { ModelRecord } from "../../../shared/api"
+import { lm } from "vscode"
 
 // Mock dependencies
 jest.mock("../../../api/providers/fetchers/modelCache")
@@ -24,6 +25,7 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 				unboundApiKey: "unbound-key",
 				litellmApiKey: "litellm-key",
 				litellmBaseUrl: "http://localhost:4000",
+				lmStudioBaseUrl: "http://localhost:1234",
 			},
 		})
 	})
@@ -60,6 +62,7 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 			apiKey: "litellm-key",
 			baseUrl: "http://localhost:4000",
 		})
+		expect(mockGetModels).toHaveBeenCalledWith({ provider: "lmstudio", baseUrl: "http://localhost:1234" })
 
 		// Verify response was sent
 		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
@@ -70,6 +73,7 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 				glama: mockModels,
 				unbound: mockModels,
 				litellm: mockModels,
+				lmstudio: mockModels,
 			},
 		})
 	})
@@ -109,6 +113,42 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 			provider: "litellm",
 			apiKey: "message-litellm-key",
 			baseUrl: "http://message-url:4000",
+		})
+	})
+
+	it("handles LMStudio models with values from message when config is missing", async () => {
+		mockClineProvider.getState = jest.fn().mockResolvedValue({
+			apiConfiguration: {
+				openRouterApiKey: "openrouter-key",
+				requestyApiKey: "requesty-key",
+				glamaApiKey: "glama-key",
+				unboundApiKey: "unbound-key",
+				// Missing lmstudio config
+			},
+		})
+
+		const mockModels: ModelRecord = {
+			"model-1": {
+				maxTokens: 4096,
+				contextWindow: 8192,
+				supportsPromptCache: false,
+				description: "Test model 1",
+			},
+		}
+
+		mockGetModels.mockResolvedValue(mockModels)
+
+		await webviewMessageHandler(mockClineProvider, {
+			type: "requestRouterModels",
+			values: {
+				lmStudioBaseUrl: "http://message-url:1234",
+			},
+		})
+
+		// Verify LiteLLM was called with values from message
+		expect(mockGetModels).toHaveBeenCalledWith({
+			provider: "lmstudio",
+			baseUrl: "http://message-url:1234",
 		})
 	})
 
@@ -155,6 +195,7 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 				glama: mockModels,
 				unbound: mockModels,
 				litellm: {},
+				lmstudio: mockModels,
 			},
 		})
 	})
@@ -176,6 +217,7 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 			.mockResolvedValueOnce(mockModels) // glama
 			.mockRejectedValueOnce(new Error("Unbound API error")) // unbound
 			.mockRejectedValueOnce(new Error("LiteLLM connection failed")) // litellm
+			.mockRejectedValueOnce(new Error("LMStudio connection failed")) // lmstudio
 
 		await webviewMessageHandler(mockClineProvider, {
 			type: "requestRouterModels",
@@ -190,6 +232,7 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 				glama: mockModels,
 				unbound: {},
 				litellm: {},
+				lmstudio: {},
 			},
 		})
 
@@ -213,6 +256,13 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 			success: false,
 			error: "LiteLLM connection failed",
 			values: { provider: "litellm" },
+		})
+
+		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
+			type: "singleRouterModelFetchResponse",
+			success: false,
+			error: "LMStudio connection failed",
+			values: { provider: "lmstudio" },
 		})
 	})
 

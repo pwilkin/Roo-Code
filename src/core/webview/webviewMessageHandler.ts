@@ -31,7 +31,6 @@ import { exportSettings, importSettings } from "../config/importExport"
 import { getOpenAiModels } from "../../api/providers/openai"
 import { getOllamaModels } from "../../api/providers/ollama"
 import { getVsCodeLmModels } from "../../api/providers/vscode-lm"
-import { getLmStudioModels } from "../../api/providers/lm-studio"
 import { openMention } from "../mentions"
 import { TelemetrySetting } from "../../shared/TelemetrySetting"
 import { getWorkspacePath } from "../../utils/path"
@@ -335,6 +334,7 @@ export const webviewMessageHandler = async (
 				glama: {},
 				unbound: {},
 				litellm: {},
+				lmstudio: {},
 			}
 
 			const safeGetModels = async (options: GetModelsOptions): Promise<ModelRecord> => {
@@ -364,6 +364,12 @@ export const webviewMessageHandler = async (
 					options: { provider: "litellm", apiKey: litellmApiKey, baseUrl: litellmBaseUrl },
 				})
 			}
+
+			const lmStudioBaseUrl = apiConfiguration.lmStudioBaseUrl || message?.values?.lmStudioBaseUrl
+			modelFetchPromises.push({
+				key: "lmstudio",
+				options: { provider: "lmstudio", baseUrl: lmStudioBaseUrl },
+			})
 
 			const results = await Promise.allSettled(
 				modelFetchPromises.map(async ({ key, options }) => {
@@ -416,11 +422,6 @@ export const webviewMessageHandler = async (
 			const ollamaModels = await getOllamaModels(message.text)
 			// TODO: Cache like we do for OpenRouter, etc?
 			provider.postMessageToWebview({ type: "ollamaModels", ollamaModels })
-			break
-		case "requestLmStudioModels":
-			const lmStudioModels = await getLmStudioModels(message.text)
-			// TODO: Cache like we do for OpenRouter, etc?
-			provider.postMessageToWebview({ type: "lmStudioModels", lmStudioModels })
 			break
 		case "requestVsCodeLmModels":
 			const vsCodeLmModels = await getVsCodeLmModels()
