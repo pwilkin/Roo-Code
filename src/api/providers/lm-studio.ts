@@ -14,10 +14,19 @@ import type { ApiHandlerCreateMessageMetadata, SingleCompletionHandler } from ".
 import { BaseProvider } from "./base-provider"
 import { flushModels, getModels } from "./fetchers/modelCache"
 
+type ModelInfoCaching = {
+	modelInfo: ModelInfo
+	cached: boolean
+}
+
 export class LmStudioHandler extends BaseProvider implements SingleCompletionHandler {
 	protected options: ApiHandlerOptions
 	private client: OpenAI
-	private cachedModelInfo: ModelInfo = openAiModelInfoSaneDefaults
+	private cachedModelInfo: ModelInfoCaching = {
+		modelInfo: openAiModelInfoSaneDefaults,
+		cached: false,
+	}
+	private lastRecacheTime: number = -1
 
 	constructor(options: ApiHandlerOptions) {
 		super()
@@ -127,20 +136,26 @@ export class LmStudioHandler extends BaseProvider implements SingleCompletionHan
 				outputTokens = 0
 			}
 
-			if (this.cachedModelInfo === openAiModelInfoSaneDefaults) {
+			if (
+				!this.cachedModelInfo.cached &&
+				(this.lastRecacheTime < 0 || Date.now() - this.lastRecacheTime > 30 * 1000)
+			) {
+				// assume that if we didn't get a response in 30 seconds
+				this.lastRecacheTime = Date.now() // Update last recache time to avoid race condition
+
 				// We need to fetch the model info every time we open a new session
 				// to ensure we have the latest context window and other details
 				// since LM Studio models can chance their context windows on reload
 				await flushModels("lmstudio")
 				const models = await getModels({ provider: "lmstudio", baseUrl: this.getBaseUrl() })
 				if (models && models[this.getModel().id]) {
-					this.cachedModelInfo = models[this.getModel().id]
-				} else {
-					// If model info is not found, use sane defaults
 					this.cachedModelInfo = {
-						...openAiModelInfoSaneDefaults,
-						description: "Fake description to avoid recache",
+						modelInfo: models[this.getModel().id],
+						cached: true,
 					}
+				} else {
+					// if model info is not found, still mark the result as cached to avoid retries on every chunk
+					this.cachedModelInfo.cached = true
 				}
 			}
 
@@ -159,7 +174,7 @@ export class LmStudioHandler extends BaseProvider implements SingleCompletionHan
 	override getModel(): { id: string; info: ModelInfo } {
 		return {
 			id: this.options.lmStudioModelId || "",
-			info: this.cachedModelInfo,
+			info: this.cachedModelInfo.modelInfo,
 		}
 	}
 
