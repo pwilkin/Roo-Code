@@ -13,7 +13,7 @@ const getLmStudioModels = async () =>
 
 		const timeout = setTimeout(() => {
 			cleanup()
-			reject(new Error("Router models request timed out"))
+			reject(new Error("LM Studio models request timed out"))
 		}, 10000)
 
 		const handler = (event: MessageEvent) => {
