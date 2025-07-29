@@ -23,7 +23,6 @@ import {
 	type TerminalActionPromptType,
 	type HistoryItem,
 	type CloudUserInfo,
-	type MarketplaceItem,
 	requestyDefaultModelId,
 	openRouterDefaultModelId,
 	glamaDefaultModelId,
@@ -41,7 +40,7 @@ import { supportPrompt } from "../../shared/support-prompt"
 import { GlobalFileNames } from "../../shared/globalFileNames"
 import { ExtensionMessage, MarketplaceInstalledMetadata } from "../../shared/ExtensionMessage"
 import { Mode, defaultModeSlug, getModeBySlug } from "../../shared/modes"
-import { experimentDefault, experiments, EXPERIMENT_IDS } from "../../shared/experiments"
+import { experimentDefault } from "../../shared/experiments"
 import { formatLanguage } from "../../shared/language"
 import { DEFAULT_WRITE_DELAY_MS } from "@roo-code/types"
 import { Terminal } from "../../integrations/terminal/Terminal"
@@ -71,7 +70,6 @@ import { WebviewMessage } from "../../shared/WebviewMessage"
 import { EMBEDDING_MODEL_PROFILES } from "../../shared/embeddingModels"
 import { ProfileValidator } from "../../shared/ProfileValidator"
 import { getWorkspaceGitInfo } from "../../utils/git"
-import { LmStudioHandler } from "../../api/providers"
 import { forceFullModelDetailsLoad, hasLoadedFullDetails } from "../../api/providers/fetchers/lmstudio"
 
 /**
@@ -186,16 +184,22 @@ export class ClineProvider
 	async performPreparationTasks(cline: Task) {
 		// LMStudio: we need to force model loading in order to read its context size; we do it now since we're starting a task with that model selected
 		if (cline.apiConfiguration && cline.apiConfiguration.apiProvider === "lmstudio") {
-			if (!hasLoadedFullDetails(cline.apiConfiguration.lmStudioModelId!)) {
-				forceFullModelDetailsLoad(
-					cline.apiConfiguration.lmStudioBaseUrl ?? "http://localhost:1234",
-					cline.apiConfiguration.lmStudioModelId!,
-				)
-			}
+			try {
+				if (!hasLoadedFullDetails(cline.apiConfiguration.lmStudioModelId!)) {
+					forceFullModelDetailsLoad(
+						cline.apiConfiguration.lmStudioBaseUrl ?? "http://localhost:1234",
+						cline.apiConfiguration.lmStudioModelId!,
+					)
+				}
 				await forceFullModelDetailsLoad(
 					cline.apiConfiguration.lmStudioBaseUrl ?? "http://localhost:1234",
 					cline.apiConfiguration.lmStudioModelId!,
 				)
+			} catch (error) {
+				this.log(`Failed to load full model details for LM Studio: ${error}`)
+				vscode.window.showErrorMessage(error.message)
+			}
+		}
 	}
 
 	// Removes and destroys the top Cline instance (the current finished task),
