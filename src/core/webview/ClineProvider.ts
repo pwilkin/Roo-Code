@@ -192,7 +192,10 @@ export class ClineProvider
 					cline.apiConfiguration.lmStudioModelId!,
 				)
 			}
-		}
+				await forceFullModelDetailsLoad(
+					cline.apiConfiguration.lmStudioBaseUrl ?? "http://localhost:1234",
+					cline.apiConfiguration.lmStudioModelId!,
+				)
 	}
 
 	// Removes and destroys the top Cline instance (the current finished task),
