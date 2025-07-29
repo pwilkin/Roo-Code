@@ -186,15 +186,11 @@ export class ClineProvider
 		if (cline.apiConfiguration && cline.apiConfiguration.apiProvider === "lmstudio") {
 			try {
 				if (!hasLoadedFullDetails(cline.apiConfiguration.lmStudioModelId!)) {
-					forceFullModelDetailsLoad(
+					await forceFullModelDetailsLoad(
 						cline.apiConfiguration.lmStudioBaseUrl ?? "http://localhost:1234",
 						cline.apiConfiguration.lmStudioModelId!,
 					)
 				}
-				await forceFullModelDetailsLoad(
-					cline.apiConfiguration.lmStudioBaseUrl ?? "http://localhost:1234",
-					cline.apiConfiguration.lmStudioModelId!,
-				)
 			} catch (error) {
 				this.log(`Failed to load full model details for LM Studio: ${error}`)
 				vscode.window.showErrorMessage(error.message)
