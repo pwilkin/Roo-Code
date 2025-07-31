@@ -20,6 +20,9 @@ export const forceFullModelDetailsLoad = async (baseUrl: string, modelId: string
 		await client.llm.model(modelId)
 		await flushModels("lmstudio")
 		await getModels({ provider: "lmstudio" }) // force cache update now
+
+		// Mark this model as having full details loaded
+		modelsWithLoadedDetails.add(modelId)
 	} catch (error) {
 		if (error.code === "ECONNREFUSED") {
 			console.warn(`Error connecting to LMStudio at ${baseUrl}`)
